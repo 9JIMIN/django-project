@@ -1,16 +1,191 @@
-# django??
+# 1. 만드는 과정
 
-- [1. Model](#1.-Model)
-- [2. View](2.-View)
-- [3. Template](#3.-Template)
-- 
+- 설치, 프로젝트 생성
 
-## 1. Model
+- 프로젝트 설정
+
+- 앱 설정
+
+  
+
+## 1.1. 설치, 프로젝트, 앱 생성
+
+- django 설치
+
+```shell
+$ virtualenv venv
+$ . venv/bin/activate
+$ pip install django
+```
+
+- 프로젝트, 앱 만들기
+- 데이터베이스 파일, 슈퍼유저 생성
+
+```shell
+$ django-admin startproject <프로젝트명>
+$ python3 manage.py startapp <에플리케이션명>
+$ python3 manage.py migrate
+$ python3 manage.py createsuperuser
+```
+
+
+
+## 1.2. 프로젝트 설정
+
+- 프로젝트에 앱 추가하기
+  - `settings.py`
+  - `urls.py`
+
+```python
+# <project>/settings.py
+INSTALLED_APPS = [
+    'polls.apps.PollsConfig', 
+    # 앱이름.apps.앱이름Config
+    # 앱 디렉토리에 apps.py에 앱이름이 있다. 그걸 넣어줘야함
+    ...
+]
+
+# <project>/urls.py
+from django.urls import include, path
+
+urlpatterns = [
+    path('polls/', include('polls.urls')), # 추가한 앱으로 연결될 path를 추가한다.
+    path('admin/', admin.site.urls),
+]
+```
+
+
+
+## 1.3. 앱 설정
+
+- `admin.py` 
+- `models.py`
+- `views.py`
+- `urls.py`
+
+### 1.3.1. admin.py
+
+- admin페이지에 만든 앱을 추가한다.
+- 기타 관리자 페이지의 UI설정도 할 수 있음.
+
+```python
+# <앱디렉토리>/admin.py
+from django.contrib import admin
+
+from .models import Question
+
+admin.site.register(Question)
+# /admin/ 에서 확인
+```
+
+### 1.3.2. models.py
+
+- 모델(데이터베이스의 구조)를 만든다. 
+- 클래스가 모델명, 안에 변수가 컬럼(필드)가 된다.
+
+```python
+from django.db import models
+from django.utils import timezone
+
+class Question(models.Model):
+    question_text = models.CharField(max_length=200)
+    pub_date = models.DateTimeField('date published')
+
+    def __str__(self):
+        return self.question_text
+
+    def was_published_recently(self):
+        now = timezone.now()
+```
+
+### 1.3.3. views.py
+
+- 받은 요청에 대한 처리를 하는 로직이 정의되는 곳이다. 
+- 데이터베이스와 템플릿 등을 받은 요청에 맞게 응답한다.
+
+```python
+class DetailView(generic.DetailView):
+    model = Question
+    template_name = 'polls/detail.html'
+
+    def get_queryset(self):
+        """
+        Excludes any questions that aren't published yet.
+        """
+        return Question.objects.filter(pub_date__lte=timezone.now())
+```
+
+### 1.3.4. urls.py
+
+- url의 구조를 만들고, view와 연결한다. 
+
+```python
+from django.urls import path
+
+from . import views
+
+app_name = 'polls'
+urlpatterns = [
+    path('', views.IndexView.as_view(), name='index'),
+    path('<int:pk>/', views.DetailView.as_view(), name='detail'),
+    path('<int:pk>/results/', views.ResultsView.as_view(), name='results'),
+    path('<int:question_id>/vote/', views.vote, name='vote'),
+]
+```
+
+### 1.3.5. templates & static
+
+- 템플릿 파일
+- `<앱이름>/templates/<앱이름>/index.html`
+- `<앱이름>/templates/<앱이름>/detail.html`
+
+```html
+{% load static %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'polls/style.css' %}">
+
+{% if latest_question_list %}
+    <ul>
+    {% for question in latest_question_list %}
+        <!-- <li><a href="/polls/{{question.id}}/">{{question.question_text}}</a></li> -->
+        <li><a href="{% url 'polls:detail' question.id %}">{{question.question_text}}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No polls are available.</p>
+{% endif %}
+```
+
+- css, image 파일
+- `<앱이름>/static/<앱이름>/style.css`
+- `<앱이름>/static/<앱이름>/<images>/test.jpg`
+
+그리고 아래 구문을 위와 같이 템플릿에 추가를 해줘야함.
+
+```python
+{% load static %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'polls/style.css' %}">
+```
+
+
+
+# 2. 배운 개념
+
+- model
+
+- view
+
+- template
+
+  
+
+## 2.1. model
 
 **모델(model)은 부가적인 메카데이타를 가진 데이터베이스의 구조(layout)을 말한다.**
 저장할 데이터의 필수적인 필드들과 동작들을 포함하고 있다. 
 데이터베이스 모델을 한곳에 정의한다. 
-`<앱이름>/model.py` 
+`<앱이름>/models.py` 
 
 ```python
 from django.db import models
@@ -52,77 +227,24 @@ $ python3 manage.py migrate <앱이름>
 
 
 
-위의 출력결과는 객체를 표현하는 것에 도움이 안된다. 모델에 `__str__()` 메서드를 추가한다. 
-
-```python
-import datetime
-
-from django.db import models
-from django.utils import timezone
-
-class Question(models.Model):
-    question_text = models.CharField(max_length=200)
-    pub_date = models.DateTimeField('date published')
-
-    def __str__(self):
-        return self.question_text
-
-    def was_published_recently(self):
-        return self.pub_date >= timezone.now() - datetime.timedelta(days=1)
-
-class Choice(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    # 각각의 Choice가 하나의 Question에 관계된다는 것을 django에게 알림.
-    choice_text = models.CharField(max_length=200)
-    votes = models.IntegerField(default=0)
-
-    def __str__(self):
-        return self.choice_text
-```
-
-관리자 만들기
-
-```shell
-$ python3 manage.py createsuperuser
-Username: ...
-Email address: ...
-Password: ...
-
-$ python3 manage.py runserver
-# 127.0.0.1:8000/admin/ 에 접근하여 로그인
-# django.contrib.auth 모듈에 의해 생성된 편집가능한 그룹과 사용자 등을 볼 수 있다. 
-```
-
-근데 poll app이 관리자 페이지에서 보이지 않는다. Question은 관리자가 편집가능해야한다. 
-admin에게 Question object가 admin 인터페이스를 가진다는 것을 알려야한다. 
-
-```python
-# polls/admin.py
-from django.contrib import admin
-from .models import Question
-admin.site.register(Question)
-```
-
-그럼 관리자 인덱스페이지에 표시가 된다.
-
-## 3. view
+## 2.2. view
 
 뷰는 Django 어플리케이션이 특정 기능과 템플릿을 제공하는 웹페이지의 한 종류이다.
 예를 들어 블로그에서는 홈페이지(최근글항목), 세부페이지(포스팅내용), 댓글기능, 월별페이지 등등이 있다. 
 
 튜토리얼에서 만드는  투표앱에는 아래 4개의 view를 만들것이다. 
 
-| 질문 index 페이지  | 최근의 질문들을 표시                    |
-| ------------------ | --------------------------------------- |
-| 질문 detail 페이지 | 질문 내용과, 투표 서식을 표시           |
-| 질문 result 페이지 | 특정 질문에 대한 결과를 표시            |
-| 투표기능           | 질문에 대해 특정 선택을 할 수 있는 기능 |
+| 질문 index 페이지      | **최근의 질문들을 표시**                    |
+| ---------------------- | ------------------------------------------- |
+| **질문 detail 페이지** | **질문 내용과, 투표 서식을 표시**           |
+| **질문 result 페이지** | **특정 질문에 대한 결과를 표시**            |
+| **투표기능**           | **질문에 대해 특정 선택을 할 수 있는 기능** |
 
 장고에서는 웹페이지와 콘텐츠가 view를 통해 전달이 된다. 
 URL의 정보(도메인 이후 내용)에 따라 그에 연결된 view 함수가 리턴된다. 
 URL로부터 뷰를 얻기위해 django는 `URLconfs` 라는 것을 사용한다. 
 
-### 뷰 추가하기
+- **뷰 추가하기**
 
 - views.py에 함수(뷰) 추가하기
 - path() 호출로 \<앱>.urls.py 모듈에 뷰를 연결하기
@@ -164,6 +286,8 @@ urlpatterns = [
 - Http404 예외를 반환.
 
 또한 뷰는 데이터 베이스를 읽고, 여러 템플릿을 사용하고, PDF, zip등의 파일생성, XML출력 등 파이썬의 어떤 라이브러리도 사용할 수 있다. 그렇지만 django에게 필요한 것은 HttpResponse객체 혹은 예외이다. 
+
+## 2.3. template
 
 뷰는 응답이지만 페이지 디자인 관련 내용은 포함하지 않는다. 
 그런 내용은 템플릿에서 관리한다. (model, view, template)
