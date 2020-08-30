@@ -65,7 +65,7 @@ urlpatterns = [
 
 ### 1.3.1. admin.py
 
-- admin페이지에 만든 앱을 추가한다.
+- admin페이지에 만든 **모델**을 추가한다.
 - 기타 관리자 페이지의 UI설정도 할 수 있음.
 
 ```python
@@ -122,7 +122,7 @@ class DetailView(generic.DetailView):
 ```python
 from django.urls import path
 
-from . import views
+from ./ import views
 
 app_name = 'polls'
 urlpatterns = [
@@ -183,6 +183,9 @@ urlpatterns = [
 ## 2.1. model
 
 **모델(model)은 부가적인 메카데이타를 가진 데이터베이스의 구조(layout)을 말한다.**
+
+모델은 하나의 데이터베이스 테이블에 메핑된다. 
+
 저장할 데이터의 필수적인 필드들과 동작들을 포함하고 있다. 
 데이터베이스 모델을 한곳에 정의한다. 
 `<앱이름>/models.py` 
@@ -206,7 +209,8 @@ class Choice(models.Model):
 각 모델은 몇개의 클래스변수(프로퍼티)를 가지고 있다. 
 ForeignKey는 각각의 Choice가 하나의 Question에 관계된다는 것을 django에게 알려준다. 
 
-> [`ForeignKey`](https://docs.djangoproject.com/en/3.1/ref/models/fields/#django.db.models.ForeignKey). That tells Django each `Choice` is related to a single `Question`. Django supports all the common database relationships: many-to-one, many-to-many, and one-to-one.
+> [`ForeignKey`](https://docs.djangoproject.com/en/3.1/ref/models/fields/#django.db.models.ForeignKey). That tells Django each `Choice` is related to a single `Question`. 
+> Django supports all the common database relationships: many-to-one, many-to-many, and one-to-one.
 
 정의한 모델 객체에 접근하기 위해서는 현재프로젝트에 해당 앱이 설치된 사실을 알려야 한다. 
 `프로젝트명/settings.py` 의 INSTALLED_APPS에 추가하면 된다. 
